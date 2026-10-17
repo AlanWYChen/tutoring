@@ -30,7 +30,7 @@ jobs:
       - run: npm run test:smoke
       - name: Upload smoke-test failure evidence
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: browser-smoke
           path: |
@@ -84,7 +84,7 @@ jobs:
         run: npm run smoke:production
       - name: Upload production smoke-test failure evidence
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: browser-smoke-production
           path: |
