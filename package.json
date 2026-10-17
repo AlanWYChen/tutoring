@@ -1,0 +1,27 @@
+{
+  "name": "alan-chen-tutoring",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "vite build",
+    "preview": "node scripts/preview.mjs",
+    "format": "prettier --write src index.html vite.config.js package.json README.md .github playwright*.js tests scripts",
+    "format:check": "prettier --check src index.html vite.config.js package.json README.md .github playwright*.js tests scripts",
+    "test:smoke": "playwright test",
+    "smoke": "npm run build && npm run verify && npm run test:smoke",
+    "verify": "node scripts/verify.mjs",
+    "smoke:production": "playwright test --config playwright.production.config.js"
+  },
+  "dependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1",
+    "@vitejs/plugin-react": "^5.0.0",
+    "prettier": "3.9.9",
+    "vite": "^7.1.0"
+  }
+}

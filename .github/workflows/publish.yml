@@ -1,0 +1,94 @@
+name: Publish GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run format:check
+      - run: npm run build
+      - run: npm run verify
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:smoke
+      - name: Upload smoke-test failure evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-smoke
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+      - name: Configure GitHub Pages
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        uses: actions/configure-pages@v5
+      - name: Upload checked site
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist
+
+  deploy:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: build
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    concurrency:
+      group: pages-deployment
+      cancel-in-progress: false
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  verify-production:
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Verify deployed Pages site
+        env:
+          SMOKE_BASE_URL: ${{ needs.deploy.outputs.page_url }}
+        run: npm run smoke:production
+      - name: Upload production smoke-test failure evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-smoke-production
+          path: |
+            playwright-report/production/
+            test-results/production/
+          if-no-files-found: ignore
+          retention-days: 7
